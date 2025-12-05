@@ -1,0 +1,18 @@
+# Dashboard Screenshots
+
+Add dashboard preview images here:
+- dashboard_preview.png - Main dashboard screenshot
+- executive_overview.png - Page 1 screenshot
+- customer_analytics.png - Page 2 screenshot
+- product_performance.png - Page 3 screenshot
+- delivery_operations.png - Page 4 screenshot
+- regional_analysis.png - Page 5 screenshot
+
+## How to Create Screenshots
+
+1. Open Power BI Dashboard
+2. Navigate to each page
+3. Press Windows + Shift + S (Windows) or Cmd + Shift + 4 (Mac)
+4. Capture the dashboard
+5. Save in this folder
+6. Update README.md with image links
