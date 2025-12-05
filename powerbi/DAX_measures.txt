@@ -1,0 +1,424 @@
+/*
+=============================================================================
+BLINKIT ANALYSIS DASHBOARD - DAX MEASURES
+=============================================================================
+Custom DAX formulas for Power BI dashboard
+*/
+
+-- ============================================================================
+-- REVENUE METRICS
+-- ============================================================================
+
+// Total Revenue
+Total Revenue = SUM(Sales[TotalAmount])
+
+// Total Revenue (Completed Orders Only)
+Total Revenue Completed = 
+CALCULATE(
+    SUM(Sales[TotalAmount]),
+    Sales[OrderStatus] = "Completed"
+)
+
+// Previous Month Revenue
+Previous Month Revenue = 
+CALCULATE(
+    [Total Revenue],
+    DATEADD(Calendar[Date], -1, MONTH)
+)
+
+// Month-over-Month Growth
+MoM Revenue Growth % = 
+DIVIDE(
+    [Total Revenue] - [Previous Month Revenue],
+    [Previous Month Revenue],
+    0
+) * 100
+
+// Year-to-Date Revenue
+YTD Revenue = 
+TOTALYTD(
+    [Total Revenue],
+    Calendar[Date]
+)
+
+// ============================================================================
+-- ORDER METRICS
+-- ============================================================================
+
+// Total Orders
+Total Orders = COUNTROWS(Sales)
+
+// Completed Orders
+Completed Orders = 
+CALCULATE(
+    COUNTROWS(Sales),
+    Sales[OrderStatus] = "Completed"
+)
+
+// Cancelled Orders
+Cancelled Orders = 
+CALCULATE(
+    COUNTROWS(Sales),
+    Sales[OrderStatus] = "Cancelled"
+)
+
+// Order Completion Rate
+Order Completion Rate % = 
+DIVIDE(
+    [Completed Orders],
+    [Total Orders],
+    0
+) * 100
+
+// Average Order Value (AOV)
+Average Order Value = 
+DIVIDE(
+    [Total Revenue],
+    [Total Orders],
+    0
+)
+
+// Average Items Per Order
+Avg Items Per Order = 
+AVERAGE(Sales[NumItems])
+
+// ============================================================================
+-- CUSTOMER METRICS
+-- ============================================================================
+
+// Total Customers
+Total Customers = DISTINCTCOUNT(Sales[CustomerID])
+
+// New Customers
+New Customers = 
+CALCULATE(
+    DISTINCTCOUNT(Sales[CustomerID]),
+    Sales[IsRepeatCustomer] = FALSE
+)
+
+// Repeat Customers
+Repeat Customers = 
+CALCULATE(
+    DISTINCTCOUNT(Sales[CustomerID]),
+    Sales[IsRepeatCustomer] = TRUE
+)
+
+// Customer Retention Rate
+Customer Retention Rate % = 
+DIVIDE(
+    [Repeat Customers],
+    [Total Customers],
+    0
+) * 100
+
+// Customer Lifetime Value (CLV)
+Customer Lifetime Value = 
+DIVIDE(
+    [Total Revenue],
+    [Total Customers],
+    0
+)
+
+// Active Customers (Last 30 Days)
+Active Customers L30D = 
+CALCULATE(
+    DISTINCTCOUNT(Sales[CustomerID]),
+    DATESINPERIOD(
+        Calendar[Date],
+        MAX(Calendar[Date]),
+        -30,
+        DAY
+    )
+)
+
+// ============================================================================
+-- DELIVERY METRICS
+-- ============================================================================
+
+// Average Delivery Time
+Avg Delivery Time = 
+AVERAGE(Delivery[DeliveryTimeMinutes])
+
+// On-Time Deliveries
+On-Time Deliveries = 
+CALCULATE(
+    COUNTROWS(Delivery),
+    Delivery[IsOnTime] = TRUE
+)
+
+// On-Time Delivery Rate
+On-Time Delivery Rate % = 
+DIVIDE(
+    [On-Time Deliveries],
+    COUNTROWS(Delivery),
+    0
+) * 100
+
+// Average Delivery Rating
+Avg Delivery Rating = 
+AVERAGE(Delivery[DeliveryRating])
+
+// Delivery Success Rate
+Delivery Success Rate % = 
+DIVIDE(
+    CALCULATE(COUNTROWS(Delivery), Delivery[DeliveryStatus] = "Delivered"),
+    COUNTROWS(Delivery),
+    0
+) * 100
+
+// ============================================================================
+-- PRODUCT METRICS
+-- ============================================================================
+
+// Total Products Sold
+Total Products Sold = SUM(Sales[NumItems])
+
+// Unique Products Sold
+Unique Products Sold = DISTINCTCOUNT(Sales[ProductID])
+
+// Average Product Price
+Avg Product Price = AVERAGE(Products[Price])
+
+// Total Product Categories
+Total Categories = DISTINCTCOUNT(Products[Category])
+
+// Products Out of Stock
+Products Out of Stock = 
+CALCULATE(
+    COUNTROWS(Products),
+    Products[StockStatus] = "Out of Stock"
+)
+
+// Stock Availability Rate
+Stock Availability % = 
+DIVIDE(
+    CALCULATE(COUNTROWS(Products), Products[StockStatus] <> "Out of Stock"),
+    COUNTROWS(Products),
+    0
+) * 100
+
+// ============================================================================
+-- PROFITABILITY METRICS
+-- ============================================================================
+
+// Total Cost
+Total Cost = SUMX(Sales, Sales[NumItems] * RELATED(Products[CostPrice]))
+
+// Gross Profit
+Gross Profit = [Total Revenue] - [Total Cost]
+
+// Gross Margin %
+Gross Margin % = 
+DIVIDE(
+    [Gross Profit],
+    [Total Revenue],
+    0
+) * 100
+
+// Average Profit Per Order
+Avg Profit Per Order = 
+DIVIDE(
+    [Gross Profit],
+    [Total Orders],
+    0
+)
+
+// ============================================================================
+-- TIME INTELLIGENCE
+-- ============================================================================
+
+// Same Period Last Year
+SPLY Revenue = 
+CALCULATE(
+    [Total Revenue],
+    SAMEPERIODLASTYEAR(Calendar[Date])
+)
+
+// Year-over-Year Growth
+YoY Growth % = 
+DIVIDE(
+    [Total Revenue] - [SPLY Revenue],
+    [SPLY Revenue],
+    0
+) * 100
+
+// Running Total
+Running Total Revenue = 
+CALCULATE(
+    [Total Revenue],
+    FILTER(
+        ALL(Calendar[Date]),
+        Calendar[Date] <= MAX(Calendar[Date])
+    )
+)
+
+// Moving Average (7 Days)
+7-Day Moving Avg = 
+AVERAGEX(
+    DATESINPERIOD(
+        Calendar[Date],
+        LASTDATE(Calendar[Date]),
+        -7,
+        DAY
+    ),
+    [Total Revenue]
+)
+
+// ============================================================================
+-- REGIONAL METRICS
+-- ============================================================================
+
+// Top City by Revenue
+Top City = 
+CALCULATE(
+    FIRSTNONBLANK(Sales[City], 1),
+    TOPN(1, ALL(Sales[City]), [Total Revenue], DESC)
+)
+
+// City Revenue Contribution %
+City Revenue % = 
+DIVIDE(
+    [Total Revenue],
+    CALCULATE([Total Revenue], ALL(Sales[City])),
+    0
+) * 100
+
+// ============================================================================
+-- CONDITIONAL FORMATTING
+-- ============================================================================
+
+// Revenue Target (Example: ₹10M per month)
+Revenue Target = 10000000
+
+// Revenue vs Target
+Revenue vs Target = [Total Revenue] - [Revenue Target]
+
+// Target Achievement %
+Target Achievement % = 
+DIVIDE(
+    [Total Revenue],
+    [Revenue Target],
+    0
+) * 100
+
+// Performance Indicator
+Performance Status = 
+SWITCH(
+    TRUE(),
+    [Target Achievement %] >= 100, "Exceeding",
+    [Target Achievement %] >= 90, "On Track",
+    [Target Achievement %] >= 75, "Below Target",
+    "Critical"
+)
+
+// ============================================================================
+-- RANKING MEASURES
+-- ============================================================================
+
+// Product Rank by Revenue
+Product Revenue Rank = 
+RANKX(
+    ALL(Products[ProductName]),
+    [Total Revenue],
+    ,
+    DESC,
+    DENSE
+)
+
+// City Rank by Orders
+City Order Rank = 
+RANKX(
+    ALL(Sales[City]),
+    [Total Orders],
+    ,
+    DESC,
+    DENSE
+)
+
+// ============================================================================
+-- CUSTOMER SEGMENTATION
+-- ============================================================================
+
+// RFM Score (Recency, Frequency, Monetary)
+RFM Score = 
+VAR RecencyScore = 
+    SWITCH(
+        TRUE(),
+        DATEDIFF(MAX(Sales[OrderDate]), TODAY(), DAY) <= 30, 5,
+        DATEDIFF(MAX(Sales[OrderDate]), TODAY(), DAY) <= 60, 4,
+        DATEDIFF(MAX(Sales[OrderDate]), TODAY(), DAY) <= 90, 3,
+        DATEDIFF(MAX(Sales[OrderDate]), TODAY(), DAY) <= 180, 2,
+        1
+    )
+VAR FrequencyScore = 
+    SWITCH(
+        TRUE(),
+        [Total Orders] >= 20, 5,
+        [Total Orders] >= 10, 4,
+        [Total Orders] >= 5, 3,
+        [Total Orders] >= 2, 2,
+        1
+    )
+VAR MonetaryScore = 
+    SWITCH(
+        TRUE(),
+        [Total Revenue] >= 10000, 5,
+        [Total Revenue] >= 5000, 4,
+        [Total Revenue] >= 2000, 3,
+        [Total Revenue] >= 1000, 2,
+        1
+    )
+RETURN
+    RecencyScore + FrequencyScore + MonetaryScore
+
+// Customer Segment
+Customer Segment = 
+SWITCH(
+    TRUE(),
+    [RFM Score] >= 12, "Champions",
+    [RFM Score] >= 9, "Loyal",
+    [RFM Score] >= 6, "Potential",
+    "At Risk"
+)
+
+// ============================================================================
+-- PEAK HOURS ANALYSIS
+-- ============================================================================
+
+// Is Peak Hour
+Is Peak Hour = 
+IF(
+    OR(
+        Sales[OrderHour] >= 7 && Sales[OrderHour] <= 9,
+        Sales[OrderHour] >= 12 && Sales[OrderHour] <= 14,
+        Sales[OrderHour] >= 19 && Sales[OrderHour] <= 21
+    ),
+    "Peak",
+    "Off-Peak"
+)
+
+// Peak Hour Revenue %
+Peak Hour Revenue % = 
+DIVIDE(
+    CALCULATE([Total Revenue], [Is Peak Hour] = "Peak"),
+    [Total Revenue],
+    0
+) * 100
+
+// ============================================================================
+-- NOTES
+-- ============================================================================
+
+/*
+Usage Instructions:
+1. Copy these measures into Power BI Desktop
+2. Create a new measure and paste the DAX code
+3. Adjust table and column names to match your data model
+4. Use these measures in your visualizations
+
+Tips:
+- Use CALCULATE for filtering contexts
+- Use DIVIDE to avoid division by zero errors
+- Use time intelligence functions for period comparisons
+- Create measure groups for better organization
+*/
