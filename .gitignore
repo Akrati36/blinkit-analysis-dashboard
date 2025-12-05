@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# Data files
+*.csv
+*.xlsx
+*.xls
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Power BI
+*.pbix
+*.pbit
+~$*.pbix
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Reports
+*.pdf
+reports/*.pdf
+!reports/.gitkeep
+
+# Images (except examples)
+images/*
+!images/.gitkeep
+!images/dashboard_preview.png
